@@ -1,0 +1,6 @@
+/target
+.DS_Store
+._*
+.env
+*.app
+scratch/
