@@ -155,6 +155,24 @@ fn main() {
 
     let hud_overlay = Arc::new(HudOverlay::new());
 
+    // Flash welcome HUD for 1.8s so user visually sees Keryx waking up on launch
+    let overlay_welcome = hud_overlay.clone();
+    let hotkey_disp = config.hotkey.clone();
+    thread::spawn(move || {
+        thread::sleep(Duration::from_millis(250));
+        let friendly_key = match hotkey_disp.as_str() {
+            "right_alt" => "Right Option",
+            "option" => "Option",
+            "fn" => "Fn / Globe",
+            "right_shift" => "Right Shift",
+            "right_control" => "Right Ctrl",
+            k => k,
+        };
+        overlay_welcome.show(&format!("🎙 Ready • Hold {}", friendly_key));
+        thread::sleep(Duration::from_millis(1800));
+        overlay_welcome.hide();
+    });
+
     // Start Tokio async runtime in background thread
     let config_bg = config.clone();
     let ctrl_bg = session_ctrl.clone();
