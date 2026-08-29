@@ -39,14 +39,19 @@ The modern AI startup playbook for voice dictation is fundamentally broken:
 5. Charge your credit card **$15 to $30 every single month**.
 6. When your WiFi blinks at an airport? *Your keyboard stops working.* 💀
 
-```
-Electron Bloatware Startup:
-[Audio] ➔ [Chromium IPC] ➔ [Node Engine] ➔ [Cloud Server] ➔ [HTTP Roundtrip] ➔ [Laggy Webview]
-   ⏱️ 1,200ms - 2,500ms latency  |  📦 650 MB RAM  |  💸 $20/month
+```mermaid
+flowchart LR
+    subgraph Electron ["❌ Typical VC Startup (Electron Bloat)"]
+        direction TB
+        E1["🎤 Audio"] --> E2["Chromium IPC"] --> E3["Node.js Engine"] --> E4["Cloud Telemetry"] --> E5["HTTP Roundtrip"] --> E6["Laggy Webview Injection"]
+        style Electron fill:#1e1014,stroke:#ef4444,stroke-width:2px,color:#fca5a5
+    end
 
-Keryx (Pure Rust):
-[Microphone] ➔ [CoreAudio / CPAL RingBuffer] ➔ [Metal GPU / Groq LPU] ➔ [OS Native Keystroke]
-   ⏱️ 150ms - 250ms latency    |  📦 ~18 MB RAM   |  💸 $0.00 Forever
+    subgraph Keryx ["⚡ Keryx (Pure Native Rust)"]
+        direction TB
+        K1["🎤 Microphone"] --> K2["CoreAudio / CPAL RingBuffer"] --> K3["Metal GPU / Groq LPU"] --> K4["Direct OS Keystroke (Sub-200ms)"]
+        style Keryx fill:#062319,stroke:#10b981,stroke-width:2px,color:#6ee7b7
+    end
 ```
 
 **Keryx runs circles around closed-source startups** because it compiles down to bare-metal native machine code. It talks directly to OS audio hardware, accessibility APIs, and hardware acceleration engines (Apple Silicon Metal, NVIDIA CUDA, or Groq LPUs).
@@ -69,27 +74,60 @@ Keryx (Pure Rust):
 
 ---
 
+## 🔄 End-to-End Processing Flow
+
+```mermaid
+flowchart LR
+    subgraph Capture ["🎙️ Real-Time Audio Capture"]
+        Mic["Microphone Input"] --> CPAL["CPAL RingBuffer (48kHz)"]
+        CPAL --> RMS["RMS Normalization & Waveform VAD"]
+    end
+
+    subgraph Pipeline ["⚡ High-Speed STT Pipeline"]
+        RMS --> Router{"Provider Routing"}
+        Router -->|"Local Metal / CUDA"| WhisperCpp["Local whisper.cpp\n(~150ms)"]
+        Router -->|"Groq LPU Silicon"| GroqAPI["Groq Whisper Large v3\n(~120ms)"]
+        Router -->|"NVIDIA / Cloud"| CloudAPI["NVIDIA Parakeet / Canary\n(~180ms)"]
+    end
+
+    subgraph Refinement ["🧠 Contextual Post-Processing"]
+        WhisperCpp --> PostCheck{"LLM Clean?"}
+        GroqAPI --> PostCheck
+        CloudAPI --> PostCheck
+        PostCheck -->|"Smart Mode"| LLM["Llama-3.3 / Mistral LLM\n(Fixes Stutters & Grammar)"]
+        PostCheck -->|"Raw Reflex"| Inject["Direct OS Keystroke Injection\n(Active App Focus)"]
+        LLM --> Inject
+    end
+
+    subgraph Feedback ["✨ Dynamic HUD Overlay"]
+        RMS -.-> DynamicHUD["Native Floating Notch HUD"]
+        Inject -.-> DynamicHUD
+    end
+
+    style Capture fill:#0f172a,stroke:#38bdf8,stroke-width:2px,color:#fff
+    style Pipeline fill:#0f172a,stroke:#818cf8,stroke-width:2px,color:#fff
+    style Refinement fill:#0f172a,stroke:#34d399,stroke-width:2px,color:#fff
+    style Feedback fill:#0f172a,stroke:#f472b6,stroke-width:2px,color:#fff
+```
+
+---
+
 ## 🌐 True Cross-Platform Architecture
 
 Keryx was architected with zero platform lock-in. Whether you're coding on a MacBook Pro, compiling on Arch Linux, or gaming on Windows 11, Keryx gives you identical low-latency voice dictation:
 
-```
-                      ┌──────────────────────────────────────────────┐
-                      │              KERYX CORE (Rust)               │
-                      │  • Lock-Free Audio RingBuffer (CPAL)         │
-                      │  • Audio Pre-Processing & RMS Equalizer      │
-                      │  • State Machine & Event Dispatcher          │
-                      └──────────────────────┬───────────────────────┘
-                                             │
-         ┌───────────────────────────────────┼──────────────────────────────────┐
-         ▼                                   ▼                                  ▼
-┌──────────────────┐               ┌──────────────────┐               ┌──────────────────┐
-│     macOS 🍎     │               │    Windows 🪟    │               │     Linux 🐧     │
-│ • CoreAudio / Metal│              │ • WASAPI / DirectX│              │ • ALSA / Pulse / Pipe│
-│ • AppKit HUD Panel │              │ • Tray & WinToast │              │ • libnotify / HUD    │
-│ • CGEvent Paste  │               │ • SendInput API  │               │ • X11 / Wayland Paste│
-│ • Native `say` TTS│              │ • SAPI / PS Sound │              │ • `aplay` / Native   │
-└──────────────────┘               └──────────────────┘               └──────────────────┘
+```mermaid
+graph TD
+    KC["<b>⚡ KERYX CORE (Pure Rust)</b><br/>• Lock-Free Audio RingBuffer (CPAL)<br/>• Audio Pre-Processing & RMS Equalizer<br/>• Zero-Allocation State Machine & Event Dispatcher"]
+
+    KC --> Mac["<b>🍎 macOS</b><br/>• CoreAudio & Metal GPU Acceleration<br/>• Cocoa/AppKit Dynamic Notch HUD<br/>• CGEvent Global Tap & Accessibility<br/>• Native `say` TTS Engine"]
+    KC --> Win["<b>🪟 Windows</b><br/>• Low-Latency WASAPI Audio Streams<br/>• Windows Toast & Tray Integration<br/>• SendInput Synthetic Keystrokes<br/>• DirectX & CUDA Whisper Acceleration"]
+    KC --> Lin["<b>🐧 Linux</b><br/>• ALSA, PulseAudio & PipeWire Support<br/>• X11 & Wayland Synthesizer<br/>• libnotify Desktop Integration<br/>• whisper.cpp Vulkan / OpenBLAS"]
+
+    style KC fill:#1e1b4b,stroke:#818cf8,stroke-width:2px,color:#fff
+    style Mac fill:#0f172a,stroke:#38bdf8,stroke-width:2px,color:#fff
+    style Win fill:#0f172a,stroke:#0284c7,stroke-width:2px,color:#fff
+    style Lin fill:#0f172a,stroke:#f59e0b,stroke-width:2px,color:#fff
 ```
 
 * **🍎 macOS**: Native Cocoa/AppKit borderless HUD panel, Metal GPU `whisper.cpp` acceleration, and CGEvent accessibility keystroke synthesis.
