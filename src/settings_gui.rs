@@ -778,10 +778,10 @@ pub fn open_settings_window() {
                     .map(|(_, val)| *val)
                     .unwrap_or("nvidia");
 
-                if stt_val == "local" || stt_val == "auto" {
+                if stt_val == "local" {
                     if let Some(m_info) = crate::model_downloader::find_model_info(&selected_local_model_title) {
                         if !crate::model_downloader::is_model_installed(m_info.filename) {
-                            let warn_str = format!("⚠️ Cannot save: '{}' not downloaded. Click [Download] first.", m_info.name);
+                            let warn_str = format!("⚠️ Local offline requires '{}'. Click [Download] first or use Auto.", m_info.name);
                             set_text(status_p.to_id(), &warn_str);
                             let coral = NSColor::colorWithCalibratedRed_green_blue_alpha_(nil, 0.98, 0.45, 0.45, 1.0);
                             let () = msg_send![status_p.to_id(), setTextColor: coral];

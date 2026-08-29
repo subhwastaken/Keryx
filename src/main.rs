@@ -49,6 +49,31 @@ static SESSION_COUNTER: AtomicU64 = AtomicU64::new(0);
 
 fn main() {
     env_logger::init();
+
+    let args: Vec<String> = std::env::args().collect();
+    let want_gui = args.iter().any(|a| a == "--gui" || a == "--settings" || a == "-s");
+    let want_help = args.iter().any(|a| a == "--help" || a == "-h");
+    let want_version = args.iter().any(|a| a == "--version" || a == "-v");
+
+    if want_version {
+        println!("⚡ Keryx v{}", env!("CARGO_PKG_VERSION"));
+        return;
+    }
+
+    if want_help {
+        println!("⚡ Keryx — High-Speed AI Voice Dictation Engine");
+        println!();
+        println!("USAGE:");
+        println!("  keryx [OPTIONS]");
+        println!();
+        println!("OPTIONS:");
+        println!("  --gui, -s       Open Keryx settings and configuration window");
+        println!("  --version, -v   Print version information");
+        println!("  --help, -h      Print help information");
+        println!();
+        return;
+    }
+
     println!("🎙 Keryx (Rust) starting...");
 
     // Single instance lock check using fs2
@@ -68,10 +93,14 @@ fn main() {
     };
 
     if lock_file.try_lock_exclusive().is_err() {
-        println!("⚠️  Keryx is already running in your menu bar. Exiting duplicate instance.");
+        println!("⚠️  Keryx is already running in your menu bar.");
+        #[cfg(target_os = "macos")]
+        {
+            settings_gui::open_settings_window();
+        }
         hud::notify(
             "Keryx Active 🎙",
-            "Keryx is already running in your top menu bar. Hold your hotkey to dictate.",
+            "Keryx is already running in your menu bar. Hold your hotkey to dictate.",
         );
         return;
     }
@@ -97,6 +126,12 @@ fn main() {
         let app = NSApp();
         app.setActivationPolicy_(NSApplicationActivationPolicyAccessory);
         app.finishLaunching();
+    }
+
+    // If user launched with --gui or --settings, open settings window immediately
+    if want_gui {
+        #[cfg(target_os = "macos")]
+        settings_gui::open_settings_window();
     }
 
     // Check/prompt permissions ONCE (cached by macOS after grant)
