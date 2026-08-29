@@ -797,6 +797,7 @@ pub fn open_settings_window() {
                     .unwrap_or("meta/llama-3.2-11b-vision-instruct");
 
                 let mut updates = HashMap::new();
+                let hotkey_saved = hotkey_val.clone();
                 updates.insert("HOTKEY".to_string(), hotkey_val);
                 updates.insert("AI_POSTPROCESSING".to_string(), ai_postprocessing_val.to_string());
                 updates.insert("TRANSCRIPTION_PROVIDER".to_string(), stt_val.to_string());
@@ -810,7 +811,9 @@ pub fn open_settings_window() {
                 if let Err(e) = save_env_file(&updates) {
                     set_text(status_p.to_id(), &format!("Error: {}", e));
                 } else {
-                    set_text(status_p.to_id(), "✓ Saved successfully");
+                    #[cfg(target_os = "macos")]
+                    crate::macos_hotkey::cgeventtap::update_hotkey_str(&hotkey_saved);
+                    set_text(status_p.to_id(), "✓ Saved & hotkey updated!");
                     let () = msg_send![win_p.to_id(), close];
                 }
             });

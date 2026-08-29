@@ -155,21 +155,12 @@ fn main() {
 
     let hud_overlay = Arc::new(HudOverlay::new());
 
-    // Flash welcome HUD for 1.8s so user visually sees Keryx waking up on launch
+    // Flash clean "Ready" HUD for 1.5s on startup
     let overlay_welcome = hud_overlay.clone();
-    let hotkey_disp = config.hotkey.clone();
     thread::spawn(move || {
-        thread::sleep(Duration::from_millis(250));
-        let friendly_key = match hotkey_disp.as_str() {
-            "right_alt" => "Right Option",
-            "option" => "Option",
-            "fn" => "Fn / Globe",
-            "right_shift" => "Right Shift",
-            "right_control" => "Right Ctrl",
-            k => k,
-        };
-        overlay_welcome.show(&format!("🎙 Ready • Hold {}", friendly_key));
-        thread::sleep(Duration::from_millis(1800));
+        thread::sleep(Duration::from_millis(200));
+        overlay_welcome.show("Ready");
+        thread::sleep(Duration::from_millis(1500));
         overlay_welcome.hide();
     });
 
@@ -279,7 +270,7 @@ fn main() {
         });
 
         let tap_state = macos_hotkey::cgeventtap::TapState {
-            keycodes,
+            keycodes: Arc::new(parking_lot::RwLock::new(keycodes)),
             tx_key: tx_arc,
             key_held: key_held_for_tap,
             last_release: last_release_for_tap,

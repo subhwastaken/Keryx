@@ -245,11 +245,26 @@ pub mod cgeventtap {
     static TAP_STATE: std::sync::OnceLock<TapState> = std::sync::OnceLock::new();
 
     pub struct TapState {
-        pub keycodes:     Vec<CGKeyCode>,
+        pub keycodes:     std::sync::Arc<parking_lot::RwLock<Vec<CGKeyCode>>>,
         pub tx_key:       std::sync::Arc<dyn Fn(crate::AppEvent) + Send + Sync>,
         pub key_held:     std::sync::Arc<parking_lot::Mutex<bool>>,
         pub last_release: std::sync::Arc<parking_lot::Mutex<Option<std::time::Instant>>>,
         pub double_tap_ms: u64,
+    }
+
+    /// Dynamically update the active hotkey keycodes without restarting
+    pub fn update_hotkey_keycodes(new_keys: Vec<CGKeyCode>) {
+        if let Some(s) = TAP_STATE.get() {
+            let mut guard = s.keycodes.write();
+            *guard = new_keys;
+            println!("[hotkey] ✓ Live updated active keycodes to: {:?}", *guard);
+        }
+    }
+
+    /// Dynamically update the active hotkey from a string name (e.g. "right_shift", "option")
+    pub fn update_hotkey_str(hotkey_str: &str) {
+        let keys = hotkey_str_to_keycodes(hotkey_str);
+        update_hotkey_keycodes(keys);
     }
 
     unsafe extern "C" fn event_tap_callback(
@@ -278,11 +293,12 @@ pub mod cgeventtap {
 
         let keycode = CGEventGetIntegerValueField(event, KEYCODE_FIELD) as CGKeyCode;
         let flags = CGEventGetFlags(event);
-        let is_hotkey = state.keycodes.contains(&keycode);
+        let keycodes_guard = state.keycodes.read();
+        let is_hotkey = keycodes_guard.contains(&keycode);
 
         if is_hotkey || keycode == KVK_ESCAPE || etype == K_CG_EVENT_FLAGS_CHANGED {
             println!("[hotkey-event] etype={} keycode={} is_hotkey={} flags=0x{:08x} match_keys={:?}",
-                etype, keycode, is_hotkey, flags, state.keycodes);
+                etype, keycode, is_hotkey, flags, *keycodes_guard);
         }
 
         match etype {
