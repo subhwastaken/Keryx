@@ -224,7 +224,7 @@ pub fn get_selected_text() -> Result<Option<String>, String> {
     if selected != marker && !selected.trim().is_empty() {
         Ok(Some(selected))
     } else {
-        // Restore original clipboard after short delay to prevent paste race condition after short delay to prevent paste race condition after short delay to prevent paste race condition content
+        // Restore original clipboard after short delay to prevent paste race condition after short delay to prevent paste race condition after short delay to prevent paste race condition after short delay to prevent paste race condition content
         let _ = clipboard.set_text(orig);
         Ok(None)
     }
